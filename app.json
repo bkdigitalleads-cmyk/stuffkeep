@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "StuffKeep",
+    "slug": "stuffkeep-inventory",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.bwk.stuffkeep",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSFaceIDUsageDescription": "StuffKeep uses Face ID to lock your home inventory so only you can see it."
+      }
+    },
+    "android": {
+      "package": "com.bwk.stuffkeep",
+      "adaptiveIcon": {
+        "backgroundColor": "#E0F2F1",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-sqlite",
+      "expo-local-authentication",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "StuffKeep uses the camera to photograph your belongings and scan barcodes or serial numbers for your inventory."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "StuffKeep lets you attach photos of your belongings from your library to your inventory.",
+          "cameraPermission": "StuffKeep uses the camera to photograph your belongings for your inventory."
+        }
+      ]
+    ],
+    "extra": {
+      "revenueCatApiKeyIos": ""
+    },
+    "owner": "bkdeveloper123"
+  }
+}
