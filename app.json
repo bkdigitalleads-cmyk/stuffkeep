@@ -47,7 +47,10 @@
       ]
     ],
     "extra": {
-      "revenueCatApiKeyIos": ""
+      "revenueCatApiKeyIos": "",
+      "eas": {
+        "projectId": "286e1743-b718-41d4-a275-072947435339"
+      }
     },
     "owner": "bkdeveloper123"
   }
