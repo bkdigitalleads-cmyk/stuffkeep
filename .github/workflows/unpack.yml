@@ -1,0 +1,21 @@
+name: Unpack source
+on:
+  push:
+    branches: [main]
+    paths: ['stuffkeep-source.tar.gz']
+permissions:
+  contents: write
+jobs:
+  unpack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract and commit
+        run: |
+          tar xzf stuffkeep-source.tar.gz
+          rm stuffkeep-source.tar.gz
+          git config user.name "Brian Kershner"
+          git config user.email "brianwkershner@gmail.com"
+          git add -A
+          git commit -m "StuffKeep v1.0: home inventory app (unpacked source)"
+          git push
