@@ -40,8 +40,9 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
     (async () => {
       const off = await getOffering();
       setOffering(off);
-      // StuffKeep is episodic-use: Lifetime matches how people value it,
-      // so it is the default selection (yearly+trial remains available).
+      // StuffKeep is episodic-use: value is captured in one sitting, so
+      // Lifetime (one-time) is the default. No free trial — a trial would let
+      // users extract the full inventory + PDF and cancel before charge.
       const lifetime =
         off?.lifetime ?? off?.annual ?? off?.availablePackages?.[0] ?? null;
       setSelected(lifetime);
@@ -63,7 +64,12 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
     }
   };
 
-  const packages = offering?.availablePackages ?? [];
+  // Lifetime is the hero for this episodic-use app — show it first.
+  const rank = (p: PurchasesPackage) =>
+    p.packageType === 'LIFETIME' ? 0 : p.packageType === 'ANNUAL' ? 1 : 2;
+  const packages = [...(offering?.availablePackages ?? [])].sort(
+    (a, b) => rank(a) - rank(b),
+  );
 
   return (
     <Modal
@@ -79,11 +85,12 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
           </Pressable>
 
           <Text style={[styles.title, { color: theme.text }]}>
-            Try StuffKeep Pro free for 7 days
+            Cover your whole home
           </Text>
           <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
             Ten minutes of documenting today can be worth thousands on the day
-            you file a claim. Start free — keep it only if you love it.
+            you file a claim. Unlock unlimited items, the insurance-ready PDF,
+            and more.
           </Text>
 
           <View style={styles.features}>
@@ -133,16 +140,16 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
                   >
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.pkgTitle, { color: theme.text }]}>
-                        {isAnnual ? 'Yearly — 7 days free' : isLifetime ? 'Lifetime' : p.product.title}
+                        {isAnnual ? 'Yearly' : isLifetime ? 'Lifetime' : p.product.title}
                       </Text>
-                      {isAnnual && (
+                      {isLifetime && (
                         <Text style={[styles.pkgBadge, { color: theme.accent }]}>
-                          Best value{monthly ? ` · ${monthly}` : ''}
+                          Best value · pay once, yours forever
                         </Text>
                       )}
-                      {isLifetime && (
+                      {isAnnual && (
                         <Text style={[styles.pkgBadge, { color: theme.textSecondary }]}>
-                          Pay once, yours forever
+                          {monthly ? `${monthly}, billed yearly` : 'Billed yearly'}
                         </Text>
                       )}
                     </View>
@@ -161,9 +168,9 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
                 onPress={buy}
                 disabled={purchasing || !selected}
               />
-              {selected?.packageType === 'ANNUAL' && (
+              {selected?.packageType === 'LIFETIME' && (
                 <Text style={[styles.noPayment, { color: theme.success }]}>
-                  ✓ No payment due today — cancel anytime
+                  ✓ One-time purchase — no subscription
                 </Text>
               )}
               <Text style={[styles.fine, { color: theme.textFaint }]}>
