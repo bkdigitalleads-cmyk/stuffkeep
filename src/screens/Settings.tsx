@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
   Alert,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -15,6 +16,9 @@ import { useApp } from '../state';
 import { deleteAllData } from '../db';
 import { deletePhotoFiles } from '../photos';
 import { restorePurchases, isBillingAvailable } from '../purchases';
+
+const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
+const PRIVACY_URL = 'https://bkdigitalleads-cmyk.github.io/stuffkeep/privacy.html';
 
 export default function SettingsScreen() {
   const theme = useTheme();
@@ -127,6 +131,14 @@ export default function SettingsScreen() {
       <Card theme={theme}>
         <Pressable onPress={onRestore} disabled={busy} style={styles.row}>
           {rowText('Restore purchases')}
+          <Text style={{ color: theme.textFaint }}>›</Text>
+        </Pressable>
+        <Pressable onPress={() => Linking.openURL(TERMS_URL)} style={styles.row}>
+          {rowText('Terms of Use (EULA)')}
+          <Text style={{ color: theme.textFaint }}>›</Text>
+        </Pressable>
+        <Pressable onPress={() => Linking.openURL(PRIVACY_URL)} style={styles.row}>
+          {rowText('Privacy Policy')}
           <Text style={{ color: theme.textFaint }}>›</Text>
         </Pressable>
       </Card>
