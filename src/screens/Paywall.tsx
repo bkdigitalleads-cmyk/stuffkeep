@@ -14,7 +14,12 @@ import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 import { useTheme, fonts } from '../theme';
 import { PillButton } from '../components';
 import { useApp } from '../state';
-import { getOffering, purchasePackage, isBillingAvailable } from '../purchases';
+import {
+  getOffering,
+  purchasePackage,
+  restorePurchases,
+  isBillingAvailable,
+} from '../purchases';
 
 const FEATURES: { icon: string; title: string; sub: string }[] = [
   { icon: '📦', title: 'Unlimited items', sub: 'Free documents 30 items. Pro covers your whole home.' },
@@ -33,6 +38,7 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
   const [selected, setSelected] = useState<PurchasesPackage | null>(null);
   const [loading, setLoading] = useState(true);
   const [purchasing, setPurchasing] = useState(false);
+  const [restoring, setRestoring] = useState(false);
 
   useEffect(() => {
     if (!paywallVisible) return;
@@ -64,12 +70,38 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
     }
   };
 
+  const onRestore = async () => {
+    if (restoring) return;
+    setRestoring(true);
+    const res = await restorePurchases();
+    setRestoring(false);
+    if (res.ok && res.isPro) {
+      setIsPro(true);
+      hidePaywall();
+      Alert.alert('Restored', 'Your StuffKeep Pro purchase is active again.');
+    } else if (res.ok) {
+      Alert.alert(
+        'No purchases found',
+        'We couldn’t find a previous StuffKeep Pro purchase on this Apple ID.',
+      );
+    } else {
+      Alert.alert('Restore failed', res.error ?? 'Please try again.');
+    }
+  };
+
   // Lifetime is the hero for this episodic-use app — show it first.
   const rank = (p: PurchasesPackage) =>
     p.packageType === 'LIFETIME' ? 0 : p.packageType === 'ANNUAL' ? 1 : 2;
   const packages = [...(offering?.availablePackages ?? [])].sort(
     (a, b) => rank(a) - rank(b),
   );
+
+  // Localized prices for the always-visible disclosure below. They are blank
+  // until StoreKit answers — the disclosure still renders without them.
+  const lifetimePrice = packages.find((p) => p.packageType === 'LIFETIME')?.product
+    .priceString;
+  const annualPrice = packages.find((p) => p.packageType === 'ANNUAL')?.product
+    .priceString;
 
   return (
     <Modal
@@ -173,19 +205,52 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
                   ✓ One-time purchase — no subscription
                 </Text>
               )}
-              <Text style={[styles.fine, { color: theme.textFaint }]}>
-                Subscriptions auto-renew until cancelled. Cancel anytime in Settings.{' '}
-                <Text style={styles.link} onPress={() => Linking.openURL(TERMS_URL)}>
-                  Terms
-                </Text>{' '}
-                ·{' '}
-                <Text style={styles.link} onPress={() => Linking.openURL(privacyUrl)}>
-                  Privacy
-                </Text>
-              </Text>
             </View>
           )}
         </ScrollView>
+
+        {/*
+          App Review guideline 3.1.2(c): the subscription's title, length, price
+          and functional Terms of Use (EULA) + Privacy Policy links must be in
+          the app itself. This block sits OUTSIDE the ScrollView and OUTSIDE the
+          "offering loaded" branch on purpose — it stays on screen without
+          scrolling and still renders if StoreKit returns no products.
+        */}
+        <View
+          style={[
+            styles.legal,
+            { borderTopColor: theme.border, backgroundColor: theme.bg },
+          ]}
+        >
+          <Text style={[styles.legalText, { color: theme.textSecondary }]}>
+            StuffKeep Pro — Lifetime{lifetimePrice ? ` ${lifetimePrice}` : ''}, a
+            one-time purchase; or Yearly{annualPrice ? ` ${annualPrice}` : ''}, an
+            auto-renewing subscription billed once per year until cancelled.
+            Cancel anytime in your Apple ID settings.
+          </Text>
+          <View style={styles.legalLinks}>
+            <Text
+              style={[styles.legalLink, { color: theme.accent }]}
+              onPress={onRestore}
+            >
+              {restoring ? 'Restoring…' : 'Restore purchases'}
+            </Text>
+            <Text style={[styles.legalDot, { color: theme.textFaint }]}>·</Text>
+            <Text
+              style={[styles.legalLink, { color: theme.accent }]}
+              onPress={() => Linking.openURL(TERMS_URL)}
+            >
+              Terms of Use (EULA)
+            </Text>
+            <Text style={[styles.legalDot, { color: theme.textFaint }]}>·</Text>
+            <Text
+              style={[styles.legalLink, { color: theme.accent }]}
+              onPress={() => Linking.openURL(privacyUrl)}
+            >
+              Privacy Policy
+            </Text>
+          </View>
+        </View>
       </View>
     </Modal>
   );
@@ -221,6 +286,25 @@ const styles = StyleSheet.create({
   pkgPrice: { fontSize: 17, fontWeight: fonts.weight.bold },
   unavailable: { textAlign: 'center', marginVertical: 24, fontSize: 15 },
   noPayment: { fontSize: 13, textAlign: 'center', fontWeight: fonts.weight.semibold },
-  fine: { fontSize: 12, textAlign: 'center', lineHeight: 17, marginTop: 4 },
-  link: { textDecorationLine: 'underline' },
+  legal: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 26,
+    gap: 6,
+  },
+  legalText: { fontSize: 11, lineHeight: 15, textAlign: 'center' },
+  legalLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legalLink: {
+    fontSize: 12,
+    fontWeight: fonts.weight.semibold,
+    textDecorationLine: 'underline',
+  },
+  legalDot: { fontSize: 12 },
 });
