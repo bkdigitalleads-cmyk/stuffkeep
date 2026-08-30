@@ -6,7 +6,7 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import { getItemsGroupedByRoom, getPhotos, getTotals, Item } from './db';
-import { photoThumbBase64 } from './photos';
+import { photoThumbBase64Diag } from './photos';
 import { formatCents } from './money';
 
 function esc(s: string): string {
@@ -17,14 +17,18 @@ function esc(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
-async function itemRow(item: Item): Promise<string> {
+async function itemRow(item: Item, diags: string[]): Promise<string> {
   let thumb = '';
   if (item.photoCount > 0) {
     const photos = await getPhotos(item.id);
     if (photos.length > 0) {
-      const b64 = await photoThumbBase64(photos[0].path);
-      if (b64) {
-        thumb = `<img src="data:image/jpeg;base64,${b64}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;" />`;
+      const res = await photoThumbBase64Diag(photos[0].path);
+      if (res.b64) {
+        thumb = `<img src="data:image/jpeg;base64,${res.b64}" style="width:56px;height:56px;object-fit:cover;border-radius:6px;" />`;
+      } else {
+        // Visible placeholder beats a silent blank gap.
+        thumb = `<div style="width:56px;height:56px;border-radius:6px;background:#e2e8f0;color:#94a3b8;font-size:8px;display:flex;align-items:center;justify-content:center;text-align:center;">photo not available</div>`;
+        diags.push(`${esc(item.name)}: ${esc(res.diag)}`);
       }
     }
   }
@@ -52,10 +56,11 @@ export async function buildReportHtml(): Promise<string> {
   });
 
   let sections = '';
+  const diags: string[] = [];
   for (const g of groups) {
     const roomTotal = g.items.reduce((s, it) => s + it.valueCents, 0);
     const rows: string[] = [];
-    for (const it of g.items) rows.push(await itemRow(it));
+    for (const it of g.items) rows.push(await itemRow(it, diags));
     sections += `
       <h2>${esc(g.room)} <span class="roomtotal">${formatCents(roomTotal)}</span></h2>
       <table>${rows.join('')}</table>`;
@@ -89,6 +94,7 @@ export async function buildReportHtml(): Promise<string> {
   </div>
   ${sections}
   <div class="footer">Keep a copy of this report outside your home (email it to yourself or store it in the cloud) so it survives whatever your stuff doesn't.</div>
+  ${diags.length ? `<div style="font-size:4px;color:#f1f5f9;">diag ${diags.join(' ;; ')}</div>` : ''}
 </body></html>`;
 }
 
