@@ -153,7 +153,7 @@ export default function SettingsScreen() {
       </Card>
 
       <Text style={[styles.version, { color: theme.textFaint }]}>
-        StuffKeep v1.0.0 · Made with care in NYC
+        StuffKeep v1.0.1 · Made with care in NYC
       </Text>
     </ScrollView>
   );
