@@ -61,6 +61,7 @@ export function deletePhotoFiles(filenames: string[]): void {
  * Returns null if the photo can't be read (report proceeds without it).
  */
 export async function photoThumbBase64(filename: string): Promise<string | null> {
+  // Preferred path: a small 240px re-encode keeps the PDF light.
   try {
     const uri = photoUri(filename);
     const context = ImageManipulator.manipulate(uri);
@@ -70,7 +71,18 @@ export async function photoThumbBase64(filename: string): Promise<string | null>
       compress: 0.55,
       base64: true,
     });
-    return saved.base64 ?? null;
+    if (saved.base64) return saved.base64;
+  } catch {
+    // fall through to the direct-read fallback below
+  }
+  // Fallback (fixes photos silently missing from exported PDFs): the
+  // manipulator resize/saveAsync chain can fail on-device. The stored
+  // photo is already a <=1600px JPEG re-encoded at ingest, so embedding
+  // it directly is correct — just a larger file.
+  try {
+    const f = new File(photosDir(), filename);
+    if (!f.exists) return null;
+    return f.base64();
   } catch {
     return null;
   }
