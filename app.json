@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.bwk.stuffkeep",
-      "buildNumber": "6",
+      "buildNumber": "7",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSFaceIDUsageDescription": "StuffKeep uses Face ID to lock your home inventory so only you can see it."
