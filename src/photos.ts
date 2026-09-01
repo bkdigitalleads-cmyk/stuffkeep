@@ -22,26 +22,64 @@ let counter = 0;
 /**
  * Ingest a picked/captured image: resize to <=1600px, re-encode JPEG,
  * store under documents/photos. Returns the stored filename.
+ *
+ * Build 7 rewrite: the build-6 diagnostic PDF proved the old
+ * new-File-API copy silently left NO file on disk ("f:missing") even
+ * though storePhoto returned success — the DB then held photo rows with
+ * no backing file, breaking thumbnails and the PDF alike. This version
+ * (1) writes via the battle-tested legacy FileSystem API, (2) treats the
+ * manipulator resize as best-effort (falls back to copying the original
+ * capture), and (3) VERIFIES the file exists before returning — if the
+ * photo isn't really on disk we throw, so the UI shows "Photo failed"
+ * instead of silently recording a ghost photo.
  */
 export async function storePhoto(sourceUri: string): Promise<string> {
-  const context = ImageManipulator.manipulate(sourceUri);
-  const rendered = await context.resize({ width: MAX_DIMENSION }).renderAsync();
-  const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.7 });
   const name = `p${Date.now()}_${counter++}.jpg`;
-  const dest = new File(photosDir(), name);
-  const src = new File(saved.uri);
-  src.copy(dest);
+  const dirPath = `${LegacyFS.documentDirectory}${PHOTOS_DIR}`;
+  const destPath = `${dirPath}/${name}`;
+  await LegacyFS.makeDirectoryAsync(dirPath, { intermediates: true }).catch(
+    () => {
+      // already exists is fine; a real failure surfaces at copy/verify below
+    },
+  );
+
+  // Resize/re-encode is best-effort: privacy EXIF strip + smaller file.
+  // If the manipulator fails on-device, store the original capture instead.
+  let source = sourceUri;
+  let tempUri: string | null = null;
   try {
-    src.delete();
+    const context = ImageManipulator.manipulate(sourceUri);
+    const rendered = await context.resize({ width: MAX_DIMENSION }).renderAsync();
+    const saved = await rendered.saveAsync({ format: SaveFormat.JPEG, compress: 0.7 });
+    if (saved?.uri) {
+      source = saved.uri;
+      tempUri = saved.uri;
+    }
   } catch {
-    // cache cleanup is best-effort
+    // fall back to the original capture uri
+  }
+
+  await LegacyFS.copyAsync({ from: source, to: destPath });
+
+  if (tempUri) {
+    LegacyFS.deleteAsync(tempUri, { idempotent: true }).catch(() => {});
+  }
+
+  // Verify-or-throw: never report success for a photo that isn't on disk.
+  const info = await LegacyFS.getInfoAsync(destPath);
+  if (!info.exists || ((info as any).size ?? 1) === 0) {
+    throw new Error('The photo could not be saved to device storage.');
   }
   return name;
 }
 
-/** Absolute uri for a stored filename (for <Image source>). */
+/**
+ * Absolute uri for a stored filename (for <Image source>).
+ * Built with the SAME legacy-API path construction that storePhoto writes
+ * to, so display and export can never diverge from the write path.
+ */
 export function photoUri(filename: string): string {
-  return new File(photosDir(), filename).uri;
+  return `${LegacyFS.documentDirectory}${PHOTOS_DIR}/${filename}`;
 }
 
 export function deletePhotoFile(filename: string): void {
@@ -123,6 +161,17 @@ export async function photoThumbBase64Diag(filename: string): Promise<ThumbResul
     steps.push('l:empty');
   } catch (e: any) {
     steps.push('l:' + String(e?.message ?? e).slice(0, 80));
+  }
+
+  // All three methods failed — append a directory probe so the next
+  // diagnostic PDF shows whether the photos dir exists and what's in it.
+  try {
+    const names = await LegacyFS.readDirectoryAsync(
+      `${LegacyFS.documentDirectory}${PHOTOS_DIR}`,
+    );
+    steps.push(`d:${names.length}[${names.slice(0, 3).join(',')}]`);
+  } catch (e: any) {
+    steps.push('d:' + String(e?.message ?? e).slice(0, 60));
   }
 
   return { b64: null, diag: steps.join('|') };
