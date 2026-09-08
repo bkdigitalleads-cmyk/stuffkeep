@@ -3,13 +3,8 @@ import * as StoreReview from 'expo-store-review';
 
 const ASKED_KEY = 'stuffkeep.reviewAsked.v1';
 
-/**
- * Ask for an App Store rating exactly once, at a happy moment:
- * right after the user's 10th item is saved (they're invested).
- */
-export async function maybeRequestReview(itemCount: number): Promise<void> {
+async function askOnce(): Promise<void> {
   try {
-    if (itemCount < 10) return;
     const asked = await AsyncStorage.getItem(ASKED_KEY);
     if (asked) return;
     if (!(await StoreReview.hasAction())) return;
@@ -20,4 +15,21 @@ export async function maybeRequestReview(itemCount: number): Promise<void> {
   } catch {
     // never let review plumbing affect the inventory
   }
+}
+
+/**
+ * Ask for an App Store rating exactly once, at a happy moment.
+ * Trigger 1: right after the user's 10th item is saved (they're invested).
+ */
+export async function maybeRequestReview(itemCount: number): Promise<void> {
+  if (itemCount < 10) return;
+  await askOnce();
+}
+
+/**
+ * Trigger 2: right after a successful PDF export — the moment the app just
+ * produced the thing they came for. Same once-only guard as trigger 1.
+ */
+export async function maybeRequestReviewAfterExport(): Promise<void> {
+  await askOnce();
 }

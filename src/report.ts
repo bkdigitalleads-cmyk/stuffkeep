@@ -94,7 +94,6 @@ export async function buildReportHtml(): Promise<string> {
   </div>
   ${sections}
   <div class="footer">Keep a copy of this report outside your home (email it to yourself or store it in the cloud) so it survives whatever your stuff doesn't.</div>
-  ${diags.length ? `<div style="font-size:4px;color:#f1f5f9;">diag ${diags.join(' ;; ')}</div>` : ''}
 </body></html>`;
 }
 
