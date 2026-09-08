@@ -73,3 +73,16 @@ app sandbox. Camera is used to photograph belongings and scan barcodes/serials o
 - [ ] Device screen recording ready BEFORE submitting (launch → add item w/ photo →
       report tab → paywall → purchase completes → Pro features unlock) — 2.1 avoided
 - [ ] Review contact typed with real key events + Save
+
+## 1.1.0 (Sep 2026) — cross-locale keywords + ratings engine + diag cleanup
+**What's New (paste into ASC):**
+Your inventory, a little sharper: cleaner PDF reports and smoother rating prompts. Thanks for keeping your stuff safe with StuffKeep.
+
+**es-MX keywords (91/99, additional English terms, no title/subtitle/en-US repeats):**
+household,checklist,garage,storage,valuables,appliance,electronics,jewelry,warranty,receipt
+
+**ar-SA keywords (82/99, additional English terms, no repeats):**
+declutter,collection,possessions,apartment,condo,landlord,theft,flood,damage,proof
+
+Used already (do not repeat): stuffkeep home inventory / insurance list photos value / contents belongings claim catalog barcode serial moving estate organizer room track renters fire.
+Reminder: added localizations may require per-locale screenshots (OneLine 1.1 gotcha) — add via version page so ASC pre-fills from en-US (Merit pattern); verify no validation warning before submit.
