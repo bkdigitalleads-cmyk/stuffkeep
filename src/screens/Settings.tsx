@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import React, { useState } from 'react';
 import {
   Alert,
@@ -153,7 +154,7 @@ export default function SettingsScreen() {
       </Card>
 
       <Text style={[styles.version, { color: theme.textFaint }]}>
-        StuffKeep v1.0.1 · Made with care in NYC
+        StuffKeep v{Constants.expoConfig?.version ?? ''} · Made with care in NYC
       </Text>
     </ScrollView>
   );

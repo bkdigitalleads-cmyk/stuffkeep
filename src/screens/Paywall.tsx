@@ -46,12 +46,10 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
     (async () => {
       const off = await getOffering();
       setOffering(off);
-      // StuffKeep is episodic-use: value is captured in one sitting, so
-      // Lifetime (one-time) is the default. No free trial — a trial would let
-      // users extract the full inventory + PDF and cancel before charge.
-      const lifetime =
-        off?.lifetime ?? off?.annual ?? off?.availablePackages?.[0] ?? null;
-      setSelected(lifetime);
+      // Yearly carries the free week and is the hero; Lifetime is the anchor.
+      const annual =
+        off?.annual ?? off?.lifetime ?? off?.availablePackages?.[0] ?? null;
+      setSelected(annual);
       setLoading(false);
     })();
   }, [paywallVisible]);
@@ -89,11 +87,11 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
     }
   };
 
-  // Lifetime is the hero for this episodic-use app — show it first.
+  // Yearly is the hero — show it first, then Lifetime, then Weekly.
   const rank = (p: PurchasesPackage) =>
-    p.packageType === 'LIFETIME'
+    p.packageType === 'ANNUAL'
       ? 0
-      : p.packageType === 'ANNUAL'
+      : p.packageType === 'LIFETIME'
         ? 1
         : p.packageType === 'WEEKLY'
           ? 2
@@ -198,13 +196,13 @@ export default function PaywallModal({ privacyUrl }: { privacyUrl: string }) {
                               : p.product.title}
                       </Text>
                       {isLifetime && (
-                        <Text style={[styles.pkgBadge, { color: theme.accent }]}>
-                          Best value · pay once, yours forever
+                        <Text style={[styles.pkgBadge, { color: theme.textSecondary }]}>
+                          Or pay once, yours forever
                         </Text>
                       )}
                       {isAnnual && (
-                        <Text style={[styles.pkgBadge, { color: theme.textSecondary }]}>
-                          {trialText ? `${trialText}, then ${p.product.priceString}/yr` : monthly ? `${monthly}, billed yearly` : 'Billed yearly'}
+                        <Text style={[styles.pkgBadge, { color: theme.accent }]}>
+                          {trialText ? `Best value · ${trialText}, then ${p.product.priceString}/yr` : monthly ? `Best value · ${monthly}, billed yearly` : 'Best value · billed yearly'}
                         </Text>
                       )}
                     </View>
